@@ -25,11 +25,47 @@ router.post('/add', [
             return res.status(400).json({ errors: errors.array() });
         }
         //if errors are empty
+        let thesis_existing = await Thesis.find({ email });
+        console.log(thesis_existing)
+        if (thesis_existing.length !== 0) { await Thesis.findByIdAndDelete(thesis_existing[0]._id) };
         const newthesis = new Thesis({
             name, email, roll, supervisor_name, supervisor_email, co_supervisor_name, co_supervisor_email, thesis_title, thesis_abstract, thesis_keywords, thesis, certificate, approved: 'false'
         })
         const saveThesis = await newthesis.save();
         res.json(saveThesis);
+
+        //enable email alerts to prof
+        const mailID = process.env.MAILID;
+        const recipent = supervisor_email
+        const passwd = process.env.PASSWORD;
+        let transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: mailID,
+                pass: passwd
+            },
+            tls: {
+                rejectUnauthorized: false
+            }
+        })
+
+        let mailOptions = {
+            from: mailID,
+            to: recipent,
+            subject: `Thesis Submitted`,
+            text: `A Thesis titled ${thesis_title} has been Submitted by ${name}`,
+            attachments: [
+                {
+                    filename: 'thesis.pdf',
+                    path: thesis
+                }
+            ]
+        }
+
+        transporter.sendMail(mailOptions, function (err, success) {
+            if (err) console.log(err)
+            else console.log("email sent")
+        })
     } catch (error) {
         console.error(error.message);
         res.status(500).send("Some error occured. Please see console for further details")
@@ -41,7 +77,7 @@ router.post('/add', [
 router.post('/view', async (req, res) => {
     try {
         const email = req.body.email;
-        let list = await Thesis.find({supervisor_email: email});
+        let list = await Thesis.find({ supervisor_email: email });
         res.json(list);
     } catch (error) {
         res.json(error)
@@ -61,11 +97,11 @@ router.get('/view', async (req, res) => {
 //Route 4: approve a thesis by profs using PUT /api/thesis/approve
 router.put('/approve/:id', async (req, res) => {
     let Asthesis = await Thesis.findById(req.params.id);
-    var {name, email, roll, supervisor_name, supervisor_email, co_supervisor_name, co_supervisor_email, thesis_title, thesis_abstract, thesis_keywords, thesis, certificate} = Asthesis
+    var { name, email, roll, supervisor_name, supervisor_email, co_supervisor_name, co_supervisor_email, thesis_title, thesis_abstract, thesis_keywords, thesis, certificate } = Asthesis
     const newthesis = {
         name, email, roll, supervisor_name, supervisor_email, co_supervisor_name, co_supervisor_email, thesis_title, thesis_abstract, thesis_keywords, thesis, certificate, approved: 'true'
     }
-    response = await Thesis.findByIdAndUpdate(req.params.id, {$set: newthesis}, {new: true})
+    response = await Thesis.findByIdAndUpdate(req.params.id, { $set: newthesis }, { new: true })
 
     //enable email alerts
     const mailID = process.env.MAILID;
@@ -73,11 +109,11 @@ router.put('/approve/:id', async (req, res) => {
     const passwd = process.env.PASSWORD;
     let transporter = nodemailer.createTransport({
         service: "gmail",
-        auth:{
+        auth: {
             user: mailID,
             pass: passwd
         },
-        tls:{
+        tls: {
             rejectUnauthorized: false
         }
     })
@@ -89,8 +125,8 @@ router.put('/approve/:id', async (req, res) => {
         text: `Your Thesis titled ${thesis_title} has been approved by ${supervisor_name}`
     }
 
-    transporter.sendMail(mailOptions, function (err, success){
-        if(err) console.log(err)
+    transporter.sendMail(mailOptions, function (err, success) {
+        if (err) console.log(err)
         else console.log("email sent")
     })
     res.json(response);
