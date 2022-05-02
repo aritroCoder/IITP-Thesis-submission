@@ -5,6 +5,13 @@ const nodemailer = require('nodemailer')
 const Thesis = require('../models/Thesis');
 const { body, validationResult } = require('express-validator');
 
+//professor emails
+const emails = [
+    "prof1@gmail.com",
+    "prof2@gmail.com",
+    "prof3@gmail.com"
+];
+
 //route 1: recieve data to mongodb using POST /api/thesis/add
 router.post('/add', [
     //required constraints
@@ -24,6 +31,18 @@ router.post('/add', [
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
+        let flg = 0;
+        for(let i=0; i<emails.length; i++){
+            if(emails[i].localeCompare(supervisor_email)===0 || emails[i].localeCompare(co_supervisor_email)===0 ){
+                flg= flg+1;
+            }
+        }
+        if(co_supervisor_email.length === 0) flg++;
+        
+        if(flg !== 2){
+            return res.status(400).json({ errors: "Supervisor and co supervisor email must be valid and flag = "+flg });
+        }
+
         //if errors are empty
         let thesis_existing = await Thesis.find({ email });
         console.log(thesis_existing)
