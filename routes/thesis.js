@@ -4,13 +4,14 @@ require('dotenv').config();
 const nodemailer = require('nodemailer')
 const Thesis = require('../models/Thesis');
 const { body, validationResult } = require('express-validator');
+const emails = require('../profemails.json');
 
 //professor emails
-const emails = [
-    "prof1@gmail.com",
-    "prof2@gmail.com",
-    "prof3@gmail.com"
-];
+// const emails = [
+//     "prof1@gmail.com",
+//     "prof2@gmail.com",
+//     "prof3@gmail.com"
+// ];
 
 //route 1: recieve data to mongodb using POST /api/thesis/add
 router.post('/add', [
@@ -38,9 +39,9 @@ router.post('/add', [
             }
         }
         if(co_supervisor_email.length === 0) flg++;
-        
+
         if(flg !== 2){
-            return res.status(400).json({ errors: "Supervisor and co supervisor email must be valid and flag = "+flg });
+            return res.status(400).json({ errors: "Supervisor and co supervisor email must be valid " });
         }
 
         //if errors are empty
